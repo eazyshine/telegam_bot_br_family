@@ -86,10 +86,15 @@ class Database:
                 resolved_at    DATETIME
             ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
         """)
-        # Add admin_username for existing tables created before this column existed
-        await self.execute(
-            "ALTER TABLE submissions ADD COLUMN IF NOT EXISTS admin_username VARCHAR(255)"
-        )
+        # Add admin_username for existing tables created before this column existed.
+        # MySQL doesn't support IF NOT EXISTS in ALTER TABLE, so we swallow error 1060
+        # (Duplicate column name) which fires when the column is already present.
+        try:
+            await self.execute(
+                "ALTER TABLE submissions ADD COLUMN admin_username VARCHAR(255)"
+            )
+        except Exception:
+            pass
 
     async def add_submission(self, user_id: int, username: str | None, section: str, content: str) -> int:
         """
