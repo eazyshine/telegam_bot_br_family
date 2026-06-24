@@ -4,8 +4,9 @@ from aiogram.types import CallbackQuery
 
 from config import ADMIN_IDS
 from database.db import db
+from keyboards.admin_kb import cancel_write_kb, submission_kb
 from states.admin_states import AdminAction
-from utils.formatters import approval_msg
+from utils.formatters import approval_msg, format_admin_msg
 
 router = Router()
 
@@ -111,5 +112,38 @@ async def cb_write(callback: CallbackQuery, state: FSMContext):
     # Writing to user does not change the submission status
     await state.set_state(AdminAction.writing_to_user)
     await state.update_data(sub_id=sub_id, user_id=sub["user_id"])
-    await callback.message.answer("Введите сообщение для пользователя:")
+    await callback.message.answer(
+        "Введите сообщение для пользователя:",
+        reply_markup=cancel_write_kb(sub_id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(lambda c: c.data and c.data.startswith("cancel_write_"))
+async def cb_cancel_write(callback: CallbackQuery, state: FSMContext):
+    """
+    Handle the 🔙 Назад button pressed on the write-to-user prompt.
+
+    Clears the FSM state and re-sends the original submission with action buttons
+    so the admin can choose a different action.
+    """
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Нет доступа.", show_alert=True)
+        return
+
+    sub_id = int(callback.data.split("_", 2)[2])
+    sub = await db.get_submission(sub_id)
+
+    await state.clear()
+
+    if not sub:
+        await callback.answer("Заявка не найдена.", show_alert=True)
+        return
+
+    admin_text = format_admin_msg(sub["user_id"], sub["username"], sub["section"], sub["content"])
+    kb = submission_kb(sub["section"], sub_id)
+
+    # Remove the "Введите сообщение" prompt and show the submission again
+    await callback.message.delete()
+    await callback.message.answer(admin_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
