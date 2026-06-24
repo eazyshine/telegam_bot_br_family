@@ -11,11 +11,19 @@ router = Router()
 
 
 def is_admin(user_id: int) -> bool:
+    """Return True if the given Telegram user ID belongs to an admin."""
     return user_id in ADMIN_IDS
 
 
 @router.callback_query(lambda c: c.data and c.data.startswith("accept_"))
 async def cb_accept(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    """
+    Handle the ✅ Принять button press.
+
+    For complaints: ask the admin for a mandatory comment before approving.
+    For all other sections: approve immediately and notify the user.
+    The status check prevents the second admin from double-processing a submission.
+    """
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа.", show_alert=True)
         return
@@ -53,6 +61,12 @@ async def cb_accept(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
 @router.callback_query(lambda c: c.data and c.data.startswith("reject_"))
 async def cb_reject(callback: CallbackQuery, state: FSMContext):
+    """
+    Handle the ❌ Отклонить button press.
+
+    Puts the admin into the writing_reject_reason FSM state so they can
+    type a rejection reason before the decision is saved to the database.
+    """
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа.", show_alert=True)
         return
@@ -77,6 +91,12 @@ async def cb_reject(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(lambda c: c.data and c.data.startswith("write_"))
 async def cb_write(callback: CallbackQuery, state: FSMContext):
+    """
+    Handle the ✉️ Написать button press.
+
+    Puts the admin into the writing_to_user FSM state.
+    Writing to the user does not change the submission status.
+    """
     if not is_admin(callback.from_user.id):
         await callback.answer("Нет доступа.", show_alert=True)
         return

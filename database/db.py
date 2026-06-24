@@ -3,6 +3,13 @@ from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 
 
 class Database:
+    """
+    Async MySQL database wrapper using a connection pool.
+
+    All SQL queries go through the single execute() method.
+    Call create_pool() on startup and close() on shutdown.
+    """
+
     def __init__(self, host: str, port: int, user: str, password: str, db_name: str):
         self.host = host
         self.port = port
@@ -12,6 +19,7 @@ class Database:
         self.pool: aiomysql.Pool | None = None
 
     async def create_pool(self):
+        """Open the connection pool. Must be called before any queries."""
         # autocommit=True so we don't need explicit commit() after every write
         self.pool = await aiomysql.create_pool(
             host=self.host,
@@ -26,6 +34,7 @@ class Database:
         )
 
     async def close(self):
+        """Gracefully close all connections in the pool."""
         if self.pool:
             self.pool.close()
             await self.pool.wait_closed()
@@ -37,6 +46,19 @@ class Database:
         fetchone: bool = False,
         fetchall: bool = False,
     ) -> dict | list | int | None:
+        """
+        Run any SQL query and return the appropriate result.
+
+        Args:
+            sql:      Raw SQL string with %s placeholders.
+            params:   Values to substitute into the placeholders.
+            fetchone: Return a single row as a dict.
+            fetchall: Return all matching rows as a list of dicts.
+
+        Returns:
+            dict if fetchone, list[dict] if fetchall,
+            lastrowid (int) for INSERT, None otherwise.
+        """
         # DictCursor returns rows as dicts instead of tuples
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -45,9 +67,10 @@ class Database:
                     return await cur.fetchone()
                 if fetchall:
                     return await cur.fetchall()
-                return cur.lastrowid  # used after INSERT to get the new row id
+                return cur.lastrowid
 
     async def init_tables(self):
+        """Create all required tables if they don't exist yet."""
         await self.execute("""
             CREATE TABLE IF NOT EXISTS submissions (
                 id            INT PRIMARY KEY AUTO_INCREMENT,
@@ -64,12 +87,30 @@ class Database:
         """)
 
     async def add_submission(self, user_id: int, username: str | None, section: str, content: str) -> int:
+        """
+        Save a new user submission and return its auto-generated ID.
+
+        Args:
+            user_id:  Telegram user ID of the sender.
+            username: Telegram @username (may be None if not set).
+            section:  Section key — 'complaint', 'deputy', 'senior', or 'misc'.
+            content:  Raw message text submitted by the user.
+
+        Returns:
+            The new submission's ID in the database.
+        """
         return await self.execute(
             "INSERT INTO submissions (user_id, username, section, content) VALUES (%s, %s, %s, %s)",
             (user_id, username, section, content),
         )
 
     async def get_submission(self, sub_id: int) -> dict | None:
+        """
+        Fetch a single submission by its ID.
+
+        Returns:
+            A dict with all submission fields, or None if not found.
+        """
         return await self.execute(
             "SELECT * FROM submissions WHERE id = %s",
             (sub_id,),
@@ -77,6 +118,15 @@ class Database:
         )
 
     async def update_status(self, sub_id: int, status: str, admin_id: int, admin_comment: str | None = None):
+        """
+        Update the status of a submission after an admin decision.
+
+        Args:
+            sub_id:        ID of the submission to update.
+            status:        New status — 'approved' or 'rejected'.
+            admin_id:      Telegram ID of the admin who made the decision.
+            admin_comment: Optional comment or rejection reason to store.
+        """
         await self.execute(
             """UPDATE submissions
                SET status = %s, admin_id = %s, admin_comment = %s, resolved_at = NOW()
@@ -85,6 +135,15 @@ class Database:
         )
 
     async def list_by_status(self, status: str) -> list[dict]:
+        """
+        Return all submissions with the given status, newest first.
+
+        Args:
+            status: 'approved', 'rejected', or 'pending'.
+
+        Returns:
+            List of submission dicts (empty list if none found).
+        """
         result = await self.execute(
             "SELECT * FROM submissions WHERE status = %s ORDER BY created_at DESC",
             (status,),

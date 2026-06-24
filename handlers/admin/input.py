@@ -11,6 +11,12 @@ router = Router()
 
 @router.message(AdminAction.writing_approve_comment)
 async def receive_approve_comment(message: Message, state: FSMContext, bot: Bot):
+    """
+    Receive the admin's approval comment for a complaint.
+
+    Triggered after the admin pressed ✅ Принять on a complaint submission
+    and was prompted to type a comment. Saves the decision and notifies the user.
+    """
     data = await state.get_data()
     sub_id = data["sub_id"]
     user_id = data["user_id"]
@@ -29,6 +35,13 @@ async def receive_approve_comment(message: Message, state: FSMContext, bot: Bot)
 
 @router.message(AdminAction.writing_reject_reason)
 async def receive_reject_reason(message: Message, state: FSMContext, bot: Bot):
+    """
+    Receive the admin's rejection reason for any section.
+
+    Triggered after the admin pressed ❌ Отклонить and was prompted to type
+    a reason. Saves the decision and sends a section-appropriate rejection
+    message to the user.
+    """
     data = await state.get_data()
     sub_id = data["sub_id"]
     user_id = data["user_id"]
@@ -48,6 +61,12 @@ async def receive_reject_reason(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(AdminAction.writing_to_user)
 async def receive_msg_to_user(message: Message, state: FSMContext, bot: Bot):
+    """
+    Forward a free-form admin message to the original submitter.
+
+    Triggered after the admin pressed ✉️ Написать. The submission status
+    is not changed — this is purely a communication channel.
+    """
     data = await state.get_data()
     user_id = data["user_id"]
     sub_id = data["sub_id"]
