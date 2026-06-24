@@ -137,6 +137,9 @@ def format_submission_detail(sub: dict) -> str:
     status_label = "Одобрено" if sub["status"] == "approved" else "Отклонено"
     lines.append(f"Решение: {status_label}")
 
+    admin_display = f"@{sub['admin_username']}" if sub.get("admin_username") else f"id:{sub['admin_id']}"
+    lines.append(f"Администратор: {admin_display}")
+
     if sub.get("admin_comment"):
         lines.append(f"Комментарий: {sub['admin_comment']}")
 

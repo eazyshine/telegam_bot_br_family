@@ -52,7 +52,7 @@ async def cb_accept(callback: CallbackQuery, state: FSMContext, bot: Bot):
         await callback.answer()
         return
 
-    await db.update_status(sub_id, "approved", callback.from_user.id)
+    await db.update_status(sub_id, "approved", callback.from_user.id, admin_username=callback.from_user.username)
 
     try:
         await bot.send_message(sub["user_id"], approval_msg(sub["section"]))

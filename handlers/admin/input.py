@@ -22,7 +22,7 @@ async def receive_approve_comment(message: Message, state: FSMContext, bot: Bot)
     user_id = data["user_id"]
     comment = message.text
 
-    await db.update_status(sub_id, "approved", message.from_user.id, comment)
+    await db.update_status(sub_id, "approved", message.from_user.id, comment, message.from_user.username)
 
     try:
         await bot.send_message(user_id, approval_msg("complaint", comment))
@@ -48,7 +48,7 @@ async def receive_reject_reason(message: Message, state: FSMContext, bot: Bot):
     section = data["section"]
     reason = message.text
 
-    await db.update_status(sub_id, "rejected", message.from_user.id, reason)
+    await db.update_status(sub_id, "rejected", message.from_user.id, reason, message.from_user.username)
 
     try:
         await bot.send_message(user_id, rejection_msg(section, reason))

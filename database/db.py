@@ -73,18 +73,23 @@ class Database:
         """Create all required tables if they don't exist yet."""
         await self.execute("""
             CREATE TABLE IF NOT EXISTS submissions (
-                id            INT PRIMARY KEY AUTO_INCREMENT,
-                user_id       BIGINT NOT NULL,
-                username      VARCHAR(255),
-                section       VARCHAR(50) NOT NULL,
-                content       TEXT NOT NULL,
-                status        VARCHAR(20) NOT NULL DEFAULT 'pending',
-                admin_id      BIGINT,
-                admin_comment TEXT,
-                created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                resolved_at   DATETIME
+                id             INT PRIMARY KEY AUTO_INCREMENT,
+                user_id        BIGINT NOT NULL,
+                username       VARCHAR(255),
+                section        VARCHAR(50) NOT NULL,
+                content        TEXT NOT NULL,
+                status         VARCHAR(20) NOT NULL DEFAULT 'pending',
+                admin_id       BIGINT,
+                admin_username VARCHAR(255),
+                admin_comment  TEXT,
+                created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                resolved_at    DATETIME
             ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
         """)
+        # Add admin_username for existing tables created before this column existed
+        await self.execute(
+            "ALTER TABLE submissions ADD COLUMN IF NOT EXISTS admin_username VARCHAR(255)"
+        )
 
     async def add_submission(self, user_id: int, username: str | None, section: str, content: str) -> int:
         """
@@ -117,21 +122,30 @@ class Database:
             fetchone=True,
         )
 
-    async def update_status(self, sub_id: int, status: str, admin_id: int, admin_comment: str | None = None):
+    async def update_status(
+        self,
+        sub_id: int,
+        status: str,
+        admin_id: int,
+        admin_comment: str | None = None,
+        admin_username: str | None = None,
+    ):
         """
         Update the status of a submission after an admin decision.
 
         Args:
-            sub_id:        ID of the submission to update.
-            status:        New status — 'approved' or 'rejected'.
-            admin_id:      Telegram ID of the admin who made the decision.
-            admin_comment: Optional comment or rejection reason to store.
+            sub_id:         ID of the submission to update.
+            status:         New status — 'approved' or 'rejected'.
+            admin_id:       Telegram ID of the admin who made the decision.
+            admin_comment:  Optional comment or rejection reason to store.
+            admin_username: Telegram @username of the admin (may be None).
         """
         await self.execute(
             """UPDATE submissions
-               SET status = %s, admin_id = %s, admin_comment = %s, resolved_at = NOW()
+               SET status = %s, admin_id = %s, admin_username = %s,
+                   admin_comment = %s, resolved_at = NOW()
                WHERE id = %s""",
-            (status, admin_id, admin_comment, sub_id),
+            (status, admin_id, admin_username, admin_comment, sub_id),
         )
 
     async def list_by_status(self, status: str) -> list[dict]:
