@@ -35,12 +35,13 @@ def submission_kb(section: str, sub_id: int) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def cancel_write_kb(sub_id: int) -> InlineKeyboardMarkup:
+def back_to_sub_kb(sub_id: int) -> InlineKeyboardMarkup:
     """
-    Build the inline keyboard shown below the 'Введите сообщение для пользователя:' prompt.
+    Build the '🔙 Назад' inline keyboard attached to every admin input prompt
+    (approve comment, reject reason, write to user).
 
-    The single '🔙 Назад' button lets the admin cancel writing and return
-    to the original submission with its action buttons.
+    Pressing the button clears the admin's FSM state and re-shows the original
+    submission with its action buttons.
 
     Args:
         sub_id: Submission ID embedded in the callback data.
@@ -49,5 +50,5 @@ def cancel_write_kb(sub_id: int) -> InlineKeyboardMarkup:
         InlineKeyboardMarkup with the back button.
     """
     builder = InlineKeyboardBuilder()
-    builder.button(text="🔙 Назад", callback_data=f"cancel_write_{sub_id}")
+    builder.button(text="🔙 Назад", callback_data=f"back_to_sub_{sub_id}")
     return builder.as_markup()

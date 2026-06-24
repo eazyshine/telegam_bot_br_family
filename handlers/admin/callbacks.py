@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery
 
 from config import ADMIN_IDS
 from database.db import db
-from keyboards.admin_kb import cancel_write_kb, submission_kb
+from keyboards.admin_kb import back_to_sub_kb, submission_kb
 from states.admin_states import AdminAction
 from utils.formatters import approval_msg, format_admin_msg
 
@@ -45,7 +45,10 @@ async def cb_accept(callback: CallbackQuery, state: FSMContext, bot: Bot):
         # Complaints require a mandatory admin comment sent to the user upon approval
         await state.set_state(AdminAction.writing_approve_comment)
         await state.update_data(sub_id=sub_id, user_id=sub["user_id"])
-        await callback.message.answer("Введите комментарий к жалобе (он будет отправлен пользователю):")
+        await callback.message.answer(
+            "Введите комментарий к жалобе (он будет отправлен пользователю):",
+            reply_markup=back_to_sub_kb(sub_id),
+        )
         await callback.answer()
         return
 
@@ -86,7 +89,10 @@ async def cb_reject(callback: CallbackQuery, state: FSMContext):
     # Ask admin to type the rejection reason before updating the DB
     await state.set_state(AdminAction.writing_reject_reason)
     await state.update_data(sub_id=sub_id, user_id=sub["user_id"], section=sub["section"])
-    await callback.message.answer("Введите причину отклонения:")
+    await callback.message.answer(
+        "Введите причину отклонения:",
+        reply_markup=back_to_sub_kb(sub_id),
+    )
     await callback.answer()
 
 
@@ -114,15 +120,16 @@ async def cb_write(callback: CallbackQuery, state: FSMContext):
     await state.update_data(sub_id=sub_id, user_id=sub["user_id"])
     await callback.message.answer(
         "Введите сообщение для пользователя:",
-        reply_markup=cancel_write_kb(sub_id),
+        reply_markup=back_to_sub_kb(sub_id),
     )
     await callback.answer()
 
 
-@router.callback_query(lambda c: c.data and c.data.startswith("cancel_write_"))
-async def cb_cancel_write(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(lambda c: c.data and c.data.startswith("back_to_sub_"))
+async def cb_back_to_sub(callback: CallbackQuery, state: FSMContext):
     """
-    Handle the 🔙 Назад button pressed on the write-to-user prompt.
+    Handle the 🔙 Назад button pressed on any admin input prompt
+    (approve comment, reject reason, write to user).
 
     Clears the FSM state and re-sends the original submission with action buttons
     so the admin can choose a different action.
@@ -131,7 +138,8 @@ async def cb_cancel_write(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Нет доступа.", show_alert=True)
         return
 
-    sub_id = int(callback.data.split("_", 2)[2])
+    # callback data: "back_to_sub_{sub_id}"
+    sub_id = int(callback.data.split("_", 3)[3])
     sub = await db.get_submission(sub_id)
 
     await state.clear()
@@ -143,7 +151,7 @@ async def cb_cancel_write(callback: CallbackQuery, state: FSMContext):
     admin_text = format_admin_msg(sub["user_id"], sub["username"], sub["section"], sub["content"])
     kb = submission_kb(sub["section"], sub_id)
 
-    # Remove the "Введите сообщение" prompt and show the submission again
+    # Remove the input prompt and re-show the submission with action buttons
     await callback.message.delete()
     await callback.message.answer(admin_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
