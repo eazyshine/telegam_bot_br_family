@@ -148,10 +148,6 @@ async def cb_back_to_sub(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Заявка не найдена.", show_alert=True)
         return
 
-    admin_text = format_admin_msg(sub["user_id"], sub["username"], sub["section"], sub["content"])
-    kb = submission_kb(sub["section"], sub_id)
-
-    # Remove the input prompt and re-show the submission with action buttons
+    # Just delete the input prompt — the original submission card is still in the chat
     await callback.message.delete()
-    await callback.message.answer(admin_text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
