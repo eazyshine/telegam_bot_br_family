@@ -81,13 +81,18 @@ async def _handle_submission(message: Message, state: FSMContext, bot: Bot, sect
 
     for admin_id in ADMIN_IDS:
         try:
-            await bot.send_message(admin_id, admin_text, reply_markup=kb, parse_mode="HTML")
-            # Copy the original message only if it contains media
-            if not message.text:
+            if message.text:
+                # Plain text — send as a regular message with action buttons
+                await bot.send_message(admin_id, admin_text, reply_markup=kb, parse_mode="HTML")
+            else:
+                # Media — copy the file and inject admin_text as the caption with action buttons
                 await bot.copy_message(
                     chat_id=admin_id,
                     from_chat_id=message.chat.id,
                     message_id=message.message_id,
+                    caption=admin_text,
+                    parse_mode="HTML",
+                    reply_markup=kb,
                 )
         except Exception:
             pass
