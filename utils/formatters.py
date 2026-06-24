@@ -48,7 +48,8 @@ def format_admin_msg(user_id: int, username: str | None, section: str, content: 
     }
     icon = icons.get(section, "📋")
 
-    return f"{icon} <b>{label}</b>\n\nОт: {mention}\n\n{content}"
+    body = f"\n\n{content}" if content else ""
+    return f"{icon} <b>{label}</b>\n\nОт: {mention}{body}"
 
 
 def confirm_msg(section: str) -> str:

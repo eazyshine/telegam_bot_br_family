@@ -68,15 +68,16 @@ async def _handle_submission(message: Message, state: FSMContext, bot: Bot, sect
     """
     user_id = message.from_user.id
     username = message.from_user.username
-    content = get_content(message)
+    content = get_content(message)  # saved to DB (includes media label like [фото])
 
     sub_id = await db.add_submission(user_id, username, section, content)
 
     await message.answer(confirm_msg(section))
 
-    # Send the formatted header with action buttons first, then copy the original
-    # message so admins see the actual media (photo, video, document, etc.)
-    admin_text = format_admin_msg(user_id, username, section, content)
+    # For media messages use only the caption (may be empty) — the media label is
+    # redundant since the admin can see the file itself
+    admin_content = message.text or message.caption or ""
+    admin_text = format_admin_msg(user_id, username, section, admin_content)
     kb = submission_kb(section, sub_id)
 
     for admin_id in ADMIN_IDS:
