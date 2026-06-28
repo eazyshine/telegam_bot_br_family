@@ -33,5 +33,5 @@ def back_kb() -> InlineKeyboardMarkup:
         InlineKeyboardMarkup with the back button.
     """
     builder = InlineKeyboardBuilder()
-    builder.button(text="Назад", callback_data="back_to_main")
+    builder.button(text="🔙Назад", callback_data="back_to_main")
     return builder.as_markup()
