@@ -4,14 +4,16 @@ from aiogram.types import Message
 
 from keyboards.user_kb import back_kb
 from states.user_states import UserSection
+from aiogram.enums import ParseMode
 
 router = Router()
 
 # Section instruction texts shown to the user after selecting a category
 COMPLAINT_TEXT = (
-    "Примечание: Жалоба на игрока принимается только в том случае, если есть неоспоримые "
+    "<b>Заявка на жалобу игрока семьи:</b>\n\n"
+    "<b>Примечание: Жалоба на игрока принимается только в том случае, если есть неоспоримые "
     "доказательства, что игрок использует стороннее ПО, сборка, читы и также в жалобе "
-    "принимаются только видеодоказательства с /time.\n\n"
+    "принимаются только видеодоказательства с <code>/time.</code>\n\n"
     "1. Ваш никнейм:\n"
     "2. Никнейм игрока:\n"
     "3. Причина подачи жалобы:\n"
@@ -19,7 +21,7 @@ COMPLAINT_TEXT = (
 )
 
 DEPUTY_TEXT = (
-    "Заявка на заместителя:\n\n"
+    "<b>Заявка на заместителя:</b>\n\n"
     "1. Ваш юзернейм в телеграм\n"
     "2. Ваш игровой никнейм\n"
     "3. Ваш опыт в других семьях на посту заместителя\n"
@@ -30,7 +32,7 @@ DEPUTY_TEXT = (
 )
 
 SENIOR_TEXT = (
-    "Заявка на старший состав:\n\n"
+    "<b>Заявка на старший состав:</b>\n\n"
     "1. Ваш юзернейм в телеграм\n"
     "2. Ваш игровой никнейм\n"
     "3. Ваш игровой онлайн\n"
@@ -47,22 +49,22 @@ MISC_TEXT = "Опишите ситуацию или задайте вопрос,
 @router.message(F.text == "Жалоба на игроков нашей семьи")
 async def section_complaint(message: Message, state: FSMContext):
     await state.set_state(UserSection.complaint)
-    await message.answer(COMPLAINT_TEXT, reply_markup=back_kb())
+    await message.answer(COMPLAINT_TEXT, reply_markup=back_kb(), parse_mode=ParseMode.HTML)
 
 
 @router.message(F.text == "Заявка на заместителя")
 async def section_deputy(message: Message, state: FSMContext):
     await state.set_state(UserSection.deputy)
-    await message.answer(DEPUTY_TEXT, reply_markup=back_kb())
+    await message.answer(DEPUTY_TEXT, reply_markup=back_kb(), parse_mode=ParseMode.HTML)
 
 
 @router.message(F.text == "Заявка на Старший Состав")
 async def section_senior(message: Message, state: FSMContext):
     await state.set_state(UserSection.senior)
-    await message.answer(SENIOR_TEXT, reply_markup=back_kb())
+    await message.answer(SENIOR_TEXT, reply_markup=back_kb(), parse_mode=ParseMode.HTML)
 
 
 @router.message(F.text == "Прочее")
 async def section_misc(message: Message, state: FSMContext):
     await state.set_state(UserSection.misc)
-    await message.answer(MISC_TEXT, reply_markup=back_kb())
+    await message.answer(MISC_TEXT, reply_markup=back_kb(), parse_mode=ParseMode.HTML)
