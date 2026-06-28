@@ -4,19 +4,27 @@ from aiogram.types import Message
 
 from keyboards.user_kb import back_kb
 from states.user_states import UserSection
+from aiogram.types import ParseMode
 
 router = Router()
 
 # Section instruction texts shown to the user after selecting a category
 COMPLAINT_TEXT = (
-    "Примечание: Жалоба на игрока принимается только в том случае, если есть неоспоримые "
+    "<b>Примечание: Жалоба на игрока принимается только в том случае, если есть неоспоримые "
     "доказательства, что игрок использует стороннее ПО, сборка, читы и также в жалобе "
-    "принимаются только видеодоказательства с /time.\n\n"
+    "принимаются только видеодоказательства с /time</b>.\n\n" 
     "1. Ваш никнейм:\n"
     "2. Никнейм игрока:\n"
     "3. Причина подачи жалобы:\n"
     "4. Доказательства(прикрепите к заявке, отправив медиа в боте):"
+     
+    
 )
+
+
+@router.message()
+async def complaint_handler(message: Message):
+    await message.answer(COMPLAINT_TEXT, parse_mode=ParseMode.HTML)
 
 DEPUTY_TEXT = (
     "Заявка на заместителя:\n\n"
