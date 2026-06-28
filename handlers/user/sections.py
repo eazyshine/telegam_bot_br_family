@@ -4,7 +4,7 @@ from aiogram.types import Message
 
 from keyboards.user_kb import back_kb
 from states.user_states import UserSection
-from aiogram.types import ParseMode
+from aiogram.enums import ParseMode
 
 router = Router()
 

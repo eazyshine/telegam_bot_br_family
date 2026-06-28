@@ -7,7 +7,6 @@ from loader import bot, dp
 from router import register_routers
 from database.db import db
 
-
 async def set_commands():
     # Register visible bot commands in the Telegram menu (the "/" button)
     await bot.set_my_commands([
